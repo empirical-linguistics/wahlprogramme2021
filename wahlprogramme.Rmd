@@ -689,6 +689,8 @@ par(mfrow = c(1,1))
 
 ![Wortwolken der Trigramme](trigram_wcs002a.png)
 
+[Grafik in höherer Auflösung](https://raw.githubusercontent.com/empirical-linguistics/wahlprogramme2021/main/fig_large/trigram_wcs002a1.png)
+
 ... und anschließend nur mit jenen, die keine Stopwords enthalten. Die Befehle unterscheiden sich ein wenig, weil ich das `min.freq`-Argument manuell angepasst habe, um Trigramme mit sehr niedriger LLR herauszufiltern, da man sonst den Wald vor lauter n-Grammen nicht mehr sieht.
 
 ```{r wctripub2, eval = FALSE, class.source = "fold-hide"}
@@ -808,6 +810,8 @@ par(mfrow = c(1,1))
 ```
 
 ![Wortwolken der Trigramme (ohne Stopwords)](trigram_wcs002b.png)
+
+[Grafik in höherer Auflösung](https://raw.githubusercontent.com/empirical-linguistics/wahlprogramme2021/main/fig_large/trigram_wcs002b.png)
 
 Auch hier müssen wir teilweise ein wenig in die Wortwolken einzoomen, um interessantere Tendenzen zu entdecken. Alternativ können wir auch die Trigrammtabellen selbst anschauen:
 
