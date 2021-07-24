@@ -19,7 +19,7 @@ In diesem kurzen Tutorial möchte ich am Beispiel der Wahlprogramme der derzeit 
 
 ## Pakete
 
-Wir laden zunächst ein paar Zusatzpakete: pdftools erlaubt uns, PDF-Dateien einzulesen; die "tidyverse"-Paketfamilie bietet einige nützliche Funktionen für die Datenaufbereitung und -analyse, und das "tidytext"-Paket vereinfacht die Arbeit mit n-Grammen (dazu später mehr). Das Paket "wordcloud" erlaubt die Erstellung von Wortwolken, was wir gegen Ende des Tutorials tun wollen -- wissenschaftlich gesehen kein besonders erkenntnisträchtiges Visualisierungsformat, aber durchaus geeignet, um einen ersten Eindruck von den Daten zu gewinnen, und daher auch in der populärwissenschaftlichen Vermittlung von (sprach-)wissenschaftlichen Forschungsergebnissen sehr populär. Das Paket "stopwords" schließlich brauchen wir, um die titelgebenden Stopwords auszuschließen - was das ist, werden wir ebenfalls weiter unten erfahren.
+Wir laden zunächst ein paar Zusatzpakete: pdftools erlaubt uns, PDF-Dateien einzulesen; die "tidyverse"-Paketfamilie bietet einige nützliche Funktionen für die Datenaufbereitung und -analyse, und das "tidytext"-Paket vereinfacht die Arbeit mit n-Grammen (dazu später mehr). Das Paket "wordcloud" erlaubt die Erstellung von Wortwolken, was wir gegen Ende des Tutorials tun wollen -- wissenschaftlich gesehen kein besonders erkenntnisträchtiges Visualisierungsformat, aber durchaus geeignet, um einen ersten Eindruck von den Daten zu gewinnen, und daher auch in der populärwissenschaftlichen Vermittlung von (sprach-)wissenschaftlichen Forschungsergebnissen sehr populär. Das Paket "stopwords" schließlich brauchen wir, um die titelgebenden Stopwords auszuschließen -- was das ist, werden wir ebenfalls weiter unten erfahren.
 
 ```{r pkgs, message = FALSE, warning = FALSE}
 
@@ -47,13 +47,14 @@ library(DT)
 
 ## Daten einlesen
 
-Das Wichtigste zuerst: Wir müssen die Texte der einzelnen Programme einlesen. Die Programme liegen zumeist im PDF-Format vor. Einzig bei der Linken findet sich (Stand 09.07.2021) kein PDF, daher nehmen wir mit der HTML-Variante vorlieb (die ohnehin einfacher einzulesen ist).
+Das Wichtigste zuerst: Wir müssen die Texte der einzelnen Programme einlesen. Die Programme liegen zumeist im PDF-Format vor. Einzig bei der Linken findet sich (Stand 09.07.2021) kein PDF, daher nehmen wir mit der HTML-Variante vorlieb (die ohnehin einfacher einzulesen ist). Die Links sind derzeit (Stand Juli 2021) noch aktuell, können sich aber natürlich prinzipiell ändern.
 
 ```{r getdata, warnings = FALSE, message = FALSE, eval = FALSE}
 
 spd_text <- pdftools::pdf_text("https://www.spd.de/fileadmin/Dokumente/Beschluesse/Programm/SPD-Zukunftsprogramm.pdf")
 gruene_text <- pdftools::pdf_text("https://cms.gruene.de/uploads/documents/Vorlaeufiges-Wahlprogramm_GRUENE-Bundestagswahl-2021.pdf")
 cdu_text <- pdftools::pdf_text("https://www.ein-guter-plan-fuer-deutschland.de/programm/CDU_Beschluss%20Regierungsprogramm.pdf")
+csu_text <- pdftools::pdf_text("https://www.csu.de/common/download/CSU-Programm_Gut_fuer_Bayern_Gut_fuer_Deutschland_final.pdf")
 fdp_text <- pdf_text("https://www.fdp.de/sites/default/files/2021-06/FDP_Programm_Bundestagswahl2021_1.pdf")
 afd_text <- pdf_text("https://cdn.afd.tools/wp-content/uploads/sites/111/2021/06/20210611_AfD_Programm_2021.pdf")
 linke <- readLines("https://www.die-linke.de/wahlen/wahlprogramm-2021/")
@@ -66,6 +67,7 @@ linke <- readLines("https://www.die-linke.de/wahlen/wahlprogramm-2021/")
 # saveRDS(linke_text, "linke.Rds")
 # saveRDS(afd_text, "afd.Rds")
 # saveRDS(cdu_text, "cdu.Rds")
+# saveRDS(csu_text, "csu.Rds")
 # saveRDS(fdp_text, "fdp.Rds")
 # saveRDS(spd_text, "spd.Rds")
 # saveRDS(gruene_text, "gruene.Rds")
@@ -76,6 +78,7 @@ linke <- readLines("https://www.die-linke.de/wahlen/wahlprogramm-2021/")
 
 spd_text <- readRDS("spd.Rds")
 cdu_text <- readRDS("cdu.Rds")
+csu_text <- readRDS("csu.Rds")
 fdp_text <- readRDS("fdp.Rds")
 gruene_text <- readRDS("gruene.Rds")
 afd_text <- readRDS("afd.Rds")
@@ -91,8 +94,6 @@ Für das Einlesen von HTML-Dateien gibt es alternativ die Möglichkeit, mit [Tra
 
 </p>
 
-::: {#collapseExample1 .collapse}
-::: {.card .card-body}
 <p style="background-color:rgba(203, 214, 11, 0.3);">
 
 Wir brauchen zusätzlich das Paket `reticulate`, das eine Schnittstelle für Python bietet. Natürlich funktioniert der Code nur, wenn auch Trafilatura installiert ist (wie das geht, ist der oben verlinkten Dokumentation zu entnehmen) -- daher arbeite ich im restlichen Tutorial einfach mit dem `readLines`-Befehl.
@@ -128,8 +129,6 @@ linke_trafi <- readRDS("linke_trafi.Rds")
 Der Text befindet sich nun im Objekt `linke_trafi`.
 
 </p>
-:::
-:::
 
 Nun haben wir die Wahlprogramme in jeweils einem Objekt gespeichert, das nach den einzelnen Parteien benannt ist. Streng genommen wäre es sinnvoll, diese Daten noch zu bereinigen, da beispielsweise das Linken-Programm, weil wir es aus der HTML-Seite extrahiert haben, noch HTML-Markup und sog. Boilerplate-Text enthält, also Text, der auf praktisch allen (Unter-)Seiten wiederverwendet wird.
 
@@ -157,7 +156,7 @@ Außer mit einzelnen Wörtern können wir auch mit *N-Grammen* arbeiten. N-Gramm
 
 ## Wortfrequenzlisten der Parteiprogramme
 
-Um zunächst die Einzelwortfrequenzen der Parteiprogramme mit der DWDS-Frequenzliste vergleichen zu können, müssen wir zunächst eine Tabelle mit den Wortfrequenzen in den einzelnen Dokumenten erstellen - man spricht hier manchmal auch von einer *term-document matrix*. Bevor wir das tun, bereinigen wir die Daten zunächst noch, indem wir die Interpunktion, Zeilenumbrüche etc. entfernen. Außerdem heben wir Groß- und Kleinschreibung auf, um die Daten besser analysieren zu können. Daraufhin nutzen wir die `strsplit`-Funktion, mit denen man, wie ihr Name verrät, Strings splitten kann, um an die einzelnen Wörter (definiert als das, was zwischen zwei Leerzeichen steht) zu gelangen. Dafür splitten wir den Text an den Leerzeichen auf. Wir erhalten dann einen sehr großen Vektor mit Einzelwörtern, die wir daraufhin mit der `table`-Funktion auszählen und in einen Dataframe überführen. Das Ganze gießen wir in eine Funktion, die wir auf die einzelnen Parteiprogramme anwenden können.
+Um zunächst die Einzelwortfrequenzen der Parteiprogramme mit der DWDS-Frequenzliste vergleichen zu können, müssen wir zunächst eine Tabelle mit den Wortfrequenzen in den einzelnen Dokumenten erstellen - man spricht hier manchmal auch von einer *term-document matrix*. Bevor wir das tun, bereinigen wir die Daten zunächst noch, indem wir die Interpunktion, Zeilenumbrüche etc. entfernen. Außerdem heben wir Groß- und Kleinschreibung auf, um die Daten besser analysieren zu können, und schließen Wörter wie *kapitel, seite* und reine Zahlenfolgen aus. Daraufhin nutzen wir die `strsplit`-Funktion, mit denen man, wie ihr Name verrät, Strings splitten kann, um an die einzelnen Wörter (definiert als das, was zwischen zwei Leerzeichen steht) zu gelangen. Dafür splitten wir den Text an den Leerzeichen auf. Wir erhalten dann einen sehr großen Vektor mit Einzelwörtern, die wir daraufhin mit der `table`-Funktion auszählen und in einen Dataframe überführen. Das Ganze gießen wir in eine Funktion, die wir auf die einzelnen Parteiprogramme anwenden können.
 
 ```{r bereinigung}
 
@@ -180,6 +179,12 @@ d <- table(d) %>% as.data.frame %>% arrange(desc(Freq))
 # Spaltennamen umbenennen:
 colnames(d) <- c("Token", "Freq")
 
+# Wörter ausschließen
+d <- d[!grepl("^kapitel$|^seite$|^[:digit:]*$", d$Token),]
+
+# sicherstellen, dass d$Token character ist
+d$Token <- as.character(d$Token)
+
 return(d)
 
 }
@@ -191,6 +196,7 @@ afd <- count_tokens(afd_text)
 gruene <- count_tokens(gruene_text)
 linke <- count_tokens(linke_text)
 cdu <- count_tokens(cdu_text)
+csu <- count_tokens(csu_text)
 
 ```
 
@@ -256,6 +262,23 @@ dice <- Vectorize(function(freq1, freq2, corpus_size1, corpus_size2) {
 
 ```
 
+Ergänzend zur LLR können wir ein Maß der **Effektstärke** berechnen -- denn bei den LLR-Werten können selbst kleine Frequenzunterschiede zu großen LLRs führen. Wir wählen hierfür die [Odds Ratio](https://en.wikipedia.org/wiki/Odds_ratio). 
+
+```{r oddsr}
+
+# Funktion für odds ratio
+odds_ratio <- Vectorize(function(freq1, freq2, corpus_size1, corpus_size2) {
+  observed <- matrix(c(freq1, corpus_size1 - freq1,
+                       freq2, corpus_size2 - freq2),
+                     ncol = 2)
+  return(
+    (observed[1,1] / observed[2,1]) / (observed[1,2] / observed[2,2])
+  )
+})
+
+```
+
+
 ### Anwendung der Assoziationsmaße
 
 Die eben erstellten Funktionen `llr` und `dice` nehmen beide vier Argumente, also Variablen, mit denen wir sie "füttern" müssen: Die Frequenz der einzelnen Tokens in unserem Korpus (dem jeweiligen Wahlprogramm) und im Vergleichskorpus sowie die Gesamtfrequenz aller Tokens in den beiden Korpora. Um Letztere greifbar zu haben, erstellen wir sie, indem wir einfach die Frequenzen in den entsprechenden Dataframes aufsummieren:
@@ -267,6 +290,7 @@ gruene_size <- sum(gruene$Freq)
 spd_size <- sum(spd$Freq)
 fdp_size <- sum(fdp$Freq)
 cdu_size <- sum(cdu$Freq)
+csu_size <- sum(csu$Freq)
 afd_size <- sum(afd$Freq)
 linke_size <- sum(linke$Freq)
 
@@ -291,6 +315,9 @@ cdu <- replace_na(cdu, list(Freq = 0, Freq_cdu = 0))
 # Spalte mit Log-Likelihood hinzufügen:
 cdu <- cdu %>% mutate(LLR = llr(cdu$Freq_cdu, cdu$Freq, cdu_size, dwds_size))
 
+# Spalte mit Odds Ratio hinzufügen:
+cdu <- cdu %>% mutate(odds_ratio = odds_ratio(cdu$Freq_cdu, cdu$Freq, cdu_size, dwds_size))
+
 # Spalte mit Dice hinzufügen:
 cdu <- cdu %>% mutate(Dice = dice(cdu$Freq_cdu, cdu$Freq, cdu_size, dwds_size)) %>% arrange(desc(LLR))
 
@@ -306,7 +333,7 @@ Dieses erste Ergebnis ist schon deutlich aufschlussreicher als die reine Tokenfr
 
 Da wir das nun auch für die anderen Parteien machen wollen, lohnt es sich, das Ganze wieder in eine Funktion zu gießen und dann auf alle Parteien anzuwenden:
 
-```{r getllranddice}
+```{r getllranddice, message=FALSE}
 
 # Funktion:
 
@@ -329,8 +356,9 @@ df <- left_join(df, dwds)
 # NAs durch 0 ersetzen
 df <- replace_na(df, list(Freq = 0, Freq_df = 0))
 
-# Spalten mit Log-Likelihood, Dice und p-Wert hinzufügen:
+# Spalten mit Log-Likelihood, Odds Ratio, Dice und p-Wert hinzufügen:
 df <- df %>% mutate(LLR = llr(df$Freq_df, df$Freq, df_size, dwds_size),
+                    odds_ratio = odds_ratio(df$Freq_df, df$Freq, df_size, dwds_size),
                     Dice = dice(df$Freq_df, df$Freq, df_size, dwds_size),
                     p = pchisq(LLR, df = 1, lower.tail = FALSE)) %>% arrange(desc(LLR))
 
@@ -347,6 +375,7 @@ fdp <- association_measures(fdp)
 linke <- association_measures(linke)
 afd <- association_measures(afd)
 gruene <- association_measures(gruene)
+csu <- association_measures(csu)
 
 ```
 
@@ -359,12 +388,13 @@ Zur Erstellung der Wortwolken benutzen wir die `wordcloud`-Funktion aus dem glei
 ```{r subsets,  message=FALSE, warning=FALSE}
 
 # Top 200
-linke200 <- head(filter(linke, !Token %in% c("li", "strong", "div", "p", "class", "ul", "nav", "h2", "nbsp", "accordion", "href", "a", "id", "h3", "aria", "panel", "role", "h4", "56202")), 200)
+linke200 <- head(filter(linke, !Token %in% c("li", "strong", "div", "p", "class", "ul", "nav", "h2", "nbsp", "accordion", "href", "a", "id", "h3", "aria", "panel", "role", "h4", "56202", "list")), 200)
 gruene200 <- head(gruene, 200)
 fdp200 <- head(fdp, 200)
 spd200 <- head(spd, 200)
 afd200 <- head(afd, 200)
 cdu200 <- head(cdu, 200)
+csu200 <- head(csu, 200)
 ```
 
 ```{r wordcloud, eval = FALSE, include = FALSE}
@@ -375,18 +405,20 @@ cdu200 <- head(cdu, 200)
 # (da die Anordnung der Wörter zufallsgeneriert ist)
 set.seed(1985)
 
-png("wordclouds01.png", width = 6, height = 6, un = "in", res = 600)
+png("wordclouds001.png", width = 6, height = 6, un = "in", res = 600)
 
-par(mfrow = c(3,2))
-par(mar = c(1, 1, 1, 1) + 0.1)
+par(mfrow = c(4,2))
+par(mar = c(.5, .5, .5, .5) + 0.1)
 
 wordcloud(words = gruene200$Token, freq = gruene200$LLR/20, col = "green", scale = c(3, .01))
 
-wordcloud(words = afd200$Token, freq = afd200$LLR/20, col = "blue", scale = c(6, .2))
+wordcloud(words = afd200$Token, freq = afd200$LLR/20, col = "blue", scale = c(3, .1), max.words = 250)
 
 wordcloud(words = fdp200$Token, freq = fdp200$LLR/20, col = "yellow3", scale = c(5, .05))
 
-wordcloud(words = cdu200$Token, freq = cdu200$LLR/20, col = "black", scale = c(4, .05))
+wordcloud(words = cdu200$Token, freq = cdu200$LLR/20, col = "grey50", scale = c(4, .05))
+
+wordcloud(words = filter(csu200, Token != "")$Token, freq = csu200$LLR/20, col = "black", scale = c(4, .05))
 
 wordcloud(words = linke200$Token, freq = fdp200$LLR/20, col = "darkred", scale = c(4, .01))
 
@@ -413,13 +445,15 @@ wordcloud(words = fdp200$Token, freq = fdp200$LLR/20, col = "yellow3", scale = c
 
 wordcloud(words = cdu200$Token, freq = cdu200$LLR/20, col = "black", scale = c(4, .05))
 
+wordcloud(words = csu200$Token, freq = csu200$LLR/20, col = "black", scale = c(4, .05))
+
 wordcloud(words = linke200$Token, freq = fdp200$LLR/20, col = "darkred", scale = c(4, .01))
 
 wordcloud(words = spd200$Token, freq = spd200$LLR/20, col = "red", scale = c(3, .01))
 
 ```
 
-![Wortwolken der einzelnen Parteiprogramme](wordclouds01.png)
+![Wortwolken der einzelnen Parteiprogramme](wordclouds001.png)
 
 Es zeigen sich ein paar interessante Tendenzen: CDU, SPD, FDP und Grüne benutzen besonders häufig *wir*. Die Modalverben *wollen* und *müssen* kommen in praktisch allen Programmen vor, was naheliegend ist. Einige Kernthemen der Parteien lassen sich aus den Keywords ebenfalls gut herauslesen: Bei der FDP zum Beispiel *Wettbewerb, Unternehmen, Digitalisierung*, bei der Linken etwa *Arbeitsbedingungen*, bei der AfD z.B. *Deutschland* und *Migration*. Dass einige Parteien gendern, schlägt sich im Keyword *innen* nieder (das bei der Tokenisierung als eigenes Wort behandelt wird). *menschen* werden bei CDU und Grünen besonders oft erwähnt, das AfD-Programm spricht über *kinder* und *familien*, das CDU-Programm über *sicherheit* und *zusammenarbeit*.
 
@@ -471,6 +505,9 @@ linke_trigrams <- linke_trafi %>% strsplit(., split = "\\.|\\?|!") %>% unlist %>
 # CDU-Trigramme:
 cdu_trigrams <- cdu_text %>% gsub("\\-\n", "", .) %>%  gsub("\n", " ", .) %>% gsub(" +", " ", .) %>% strsplit(., split = "\\.|\\?|!") %>% unlist %>% trimws %>% no_empty %>% as_tibble() %>% unnest_tokens(trigram, value, token="ngrams", n = 3) %>% na.omit
 
+# CSU-Trigramme:
+csu_trigrams <- csu_text %>% gsub("\\-\n", "", .) %>%  gsub("\n", " ", .) %>% gsub(" +", " ", .) %>% strsplit(., split = "\\.|\\?|!") %>% unlist %>% trimws %>% no_empty %>% as_tibble() %>% unnest_tokens(trigram, value, token="ngrams", n = 3) %>% na.omit
+
 # AfD-Trigramme:
 afd_trigrams <- afd_text %>% gsub("\\-\n", "", .) %>%  gsub("\n", " ", .) %>% gsub(" +", " ", .) %>% strsplit(., split = "\\.|\\?|!") %>% unlist %>% trimws %>% no_empty %>% as_tibble() %>% unnest_tokens(trigram, value, token="ngrams", n = 3) %>% na.omit
 
@@ -487,6 +524,7 @@ Um quasi die "Alleinstellungsmerkmale" der einzelnen Parteiprogramme gegenüber 
 
 trigrams <- rbind(mutate(afd_trigrams, Partei = "afd"),
                   mutate(cdu_trigrams, Partei = "cdu"),
+                  mutate(csu_trigrams, Partei = "csu"),
       mutate(fdp_trigrams, Partei = "fdp"),
       mutate(gruene_trigrams, Partei = "gruene"),
       mutate(linke_trigrams, Partei = "linke"),
@@ -544,21 +582,6 @@ for(i in 1:length(unique(tri_count$Partei))) {
 
 ```
 
-Ergänzend zur LLR können wir ein Maß der **Effektstärke** berechnen -- denn bei den LLR-Werten können selbst kleine Frequenzunterschiede zu großen LLRs führen. Wir wählen hierfür die [Odds Ratio](https://en.wikipedia.org/wiki/Odds_ratio). 
-
-```{r oddsr}
-
-# Funktion für odds ratio
-odds_ratio <- Vectorize(function(freq1, freq2, corpus_size1, corpus_size2) {
-  observed <- matrix(c(freq1, corpus_size1 - freq1,
-                       freq2, corpus_size2 - freq2),
-                     ncol = 2)
-  return(
-    (observed[1,1] / observed[2,1]) / (observed[1,2] / observed[2,2])
-  )
-})
-
-```
 
 ```{r normfreq, eval = FALSE, include = FALSE}
 
@@ -633,50 +656,77 @@ tri_count <- tri_count[grep("^([[:digit:]]| )+$", tri_count$trigram, invert = T)
 
 set.seed(1985)
 
+par(mfrow = c(4,2))
+par(mar = c(.5, .5, .5, .5) + 0.1)
 wordcloud(filter(tri_count, Partei == "spd")$trigram, 
           filter(tri_count, Partei == "spd")$llr,
-          scale = c(1.2, .01), colors = "red")
+          scale = c(1, .001), colors = "red", max.words = 200)
 wordcloud(filter(tri_count, Partei == "linke")$trigram, 
           filter(tri_count, Partei == "linke")$llr,
-          scale = c(1.5, .01), colors = "darkred")
+          scale = c(1, .001), colors = "darkred", max.words = 200)
 wordcloud(filter(tri_count, Partei == "fdp")$trigram, 
           filter(tri_count, Partei == "fdp")$llr,
-          scale = c(4, .1), colors = "yellow3")
+          scale = c(4, .2), colors = "yellow3", max.words = 200)
 wordcloud(filter(tri_count, Partei == "cdu")$trigram, 
-          filter(tri_count, Partei == "cdu")$llr,
-          scale = c(4, .1), colors = "black")
+          filter(tri_count, Partei == "cdu")$llr/2,
+          scale = c(2, .01), colors = "grey50", max.words = 200)
+wordcloud(filter(tri_count, Partei == "csu")$trigram, 
+          filter(tri_count, Partei == "csu")$llr/3,
+          scale = c(1, .001), colors = "black", max.words = 200)
 wordcloud(filter(tri_count, Partei == "gruene")$trigram, 
           filter(tri_count, Partei == "gruene")$llr,
-          scale = c(1.5, .01), colors = "green")
+          scale = c(1.5, .01), colors = "green", max.words = 200)
 wordcloud(filter(tri_count, Partei == "afd")$trigram, 
           filter(tri_count, Partei == "afd")$llr,
-          scale = c(2, .01), colors = "blue")
+          scale = c(2, .01), colors = "blue", max.words = 200)
+par(mar = c(5, 4, 4, 2) + 0.1)
+par(mfrow = c(1,1))
 
 ```
 
-![Wortwolken der Trigramme](trigram_wcs02a.png)
+![Wortwolken der Trigramme](trigram_wcs002a.png)
 
-... und anschließend nur mit jenen, die keine Stopwords enthalten:
+... und anschließend nur mit jenen, die keine Stopwords enthalten. Die Befehle unterscheiden sich ein wenig, weil ich das `min.freq`-Argument manuell angepasst habe, um Trigramme mit sehr niedriger LLR herauszufiltern, da man sonst den Wald vor lauter n-Grammen nicht mehr sieht.
 
 ```{r wctripub2, eval = FALSE}
 
 set.seed(1985)
 
+# 4 Zeilen, 2 Spalten
+par(mfrow = c(4,2))
+
+# Margins verkleinern, damit alle Wörter zu sehen sind
+par(mar = c(.5, .5, .5, .5) + 0.1)
+
+# Wortwolken
 wordcloud(filter(tri_count, Partei == "spd", in_stopwords == 0)$trigram, 
           filter(tri_count, Partei == "spd", in_stopwords == 0)$llr,
-          scale = c(1.2, .01), colors = "red")
+          scale = c(1.5, .001), colors = "red", max.words = 200)
+
 wordcloud(filter(tri_count, Partei == "linke", in_stopwords == 0)$trigram, 
           filter(tri_count, Partei == "linke", in_stopwords == 0)$llr,
-          scale = c(1.5, .01), colors = "darkred")
+          scale = c(.5, .00002), colors = "darkred", max.words = 200, min.freq = 1)
+
 wordcloud(filter(tri_count, Partei == "fdp", in_stopwords == 0)$trigram, 
           filter(tri_count, Partei == "fdp", in_stopwords == 0)$llr,
-          scale = c(4, .1), colors = "yellow3")
-wordcloud(filter(tri_count, Partei == "gruene", in_stopwords == 0)$trigram, 
+          scale = c(3, .2), colors = "yellow3", max.words = 200)
+
+wordcloud(filter(tri_count, Partei == "cdu", in_stopwords == 0)$trigram, 
+          filter(tri_count, Partei == "cdu", in_stopwords == 0)$llr,
+          scale = c(.5, .000001), colors = "grey50", max.words = 200)
+
+wordcloud(filter(tri_count, Partei == "csu", in_stopwords == 0)$trigram,           filter(tri_count, Partei == "csu")$llr,
+          scale = c(2, .01), colors = "black", max.words = 200)
+
+wordcloud(filter(tri_count, Partei == "gruene", in_stopwords==0)$trigram, 
           filter(tri_count, Partei == "gruene", in_stopwords == 0)$llr,
-          scale = c(1.5, .01), colors = "green")
+          scale = c(1, .001), colors = "green", min.freq = 1,max.words = 200)
+
 wordcloud(filter(tri_count, Partei == "afd", in_stopwords == 0)$trigram, 
           filter(tri_count, Partei == "afd", in_stopwords == 0)$llr,
-          scale = c(2, .01), colors = "blue")
+          scale = c(1.5, .01), colors = "blue", min.freq = 2.5, max.words = 200)
+par(mar = c(5, 4, 4, 2) + 0.1)
+par(mfrow = c(1,1))
 
 ```
 
@@ -688,65 +738,73 @@ set.seed(1985)
 
 # mit Stopwords:
 
-png("trigram_wcs02a.png", width = 6, height = 6, un = "in", res = 1200)
+png("trigram_wcs002a.png", width = 6, height = 6, un = "in", res = 1200)
 # svglite("trigram_wcs02.svg", width = 6, height = 6)
-par(mfrow = c(3,2))
-par(mar = c(1, 1, 1, 1) + 0.1)
+par(mfrow = c(4,2))
+par(mar = c(.5, .5, .5, .5) + 0.1)
 wordcloud(filter(tri_count, Partei == "spd")$trigram, 
           filter(tri_count, Partei == "spd")$llr,
-          scale = c(1.2, .01), colors = "red")
+          scale = c(1, .001), colors = "red", max.words = 200)
 wordcloud(filter(tri_count, Partei == "linke")$trigram, 
           filter(tri_count, Partei == "linke")$llr,
-          scale = c(1.5, .01), colors = "darkred")
+          scale = c(1, .001), colors = "darkred", max.words = 200)
 wordcloud(filter(tri_count, Partei == "fdp")$trigram, 
           filter(tri_count, Partei == "fdp")$llr,
-          scale = c(4, .1), colors = "yellow3")
+          scale = c(4, .2), colors = "yellow3", max.words = 200)
 wordcloud(filter(tri_count, Partei == "cdu")$trigram, 
           filter(tri_count, Partei == "cdu")$llr/2,
-          scale = c(2, .01), colors = "black")
+          scale = c(2, .01), colors = "grey50", max.words = 200)
+wordcloud(filter(tri_count, Partei == "csu")$trigram, 
+          filter(tri_count, Partei == "csu")$llr/3,
+          scale = c(1, .001), colors = "black", max.words = 200)
 wordcloud(filter(tri_count, Partei == "gruene")$trigram, 
           filter(tri_count, Partei == "gruene")$llr,
-          scale = c(1.5, .01), colors = "green")
+          scale = c(1.5, .01), colors = "green", max.words = 200)
 wordcloud(filter(tri_count, Partei == "afd")$trigram, 
           filter(tri_count, Partei == "afd")$llr,
-          scale = c(2, .01), colors = "blue")
+          scale = c(2, .01), colors = "blue", max.words = 200)
 dev.off()
 par(mar = c(5, 4, 4, 2) + 0.1)
 par(mfrow = c(1,1))
 
 # nur ohne Stopwords:
-png("trigram_wcs02b.png", width = 6, height = 6, un = "in", res = 1200)
+png("trigram_wcs002b.png", width = 6, height = 6, un = "in", res = 1200)
 # svglite("trigram_wcs02.svg", width = 6, height = 6)
-par(mfrow = c(3,2))
+par(mfrow = c(4,2))
 par(mar = c(1, 1, 1, 1) + 0.1)
 wordcloud(filter(tri_count, Partei == "spd", in_stopwords == 0)$trigram, 
           filter(tri_count, Partei == "spd", in_stopwords == 0)$llr,
-          scale = c(1.5, .001), colors = "red")
+          scale = c(1.5, .001), colors = "red", max.words = 200)
 
 wordcloud(filter(tri_count, Partei == "linke", in_stopwords == 0)$trigram, 
-          filter(tri_count, Partei == "linke", in_stopwords == 0)$llr*2,
-          scale = c(1, .2), colors = "darkred")
+          filter(tri_count, Partei == "linke", in_stopwords == 0)$llr,
+          scale = c(.5, .00002), colors = "darkred", max.words = 200, min.freq = 1)
 
 wordcloud(filter(tri_count, Partei == "fdp", in_stopwords == 0)$trigram, 
           filter(tri_count, Partei == "fdp", in_stopwords == 0)$llr,
-          scale = c(4, .2), colors = "yellow3")
+          scale = c(3, .2), colors = "yellow3", max.words = 200)
+
 wordcloud(filter(tri_count, Partei == "cdu", in_stopwords == 0)$trigram, 
           filter(tri_count, Partei == "cdu", in_stopwords == 0)$llr,
-          scale = c(1, .005), colors = "black")
+          scale = c(.5, .000001), colors = "grey50", max.words = 200)
+
+wordcloud(filter(tri_count, Partei == "csu", in_stopwords == 0)$trigram,           filter(tri_count, Partei == "csu")$llr,
+          scale = c(2, .01), colors = "black", max.words = 200)
+
 wordcloud(filter(tri_count, Partei == "gruene", in_stopwords==0)$trigram, 
-          filter(tri_count, Partei == "gruene", in_stopwords == 0)$llr*3,
-          scale = c(1, .001), colors = "green")
+          filter(tri_count, Partei == "gruene", in_stopwords == 0)$llr,
+          scale = c(1, .001), colors = "green", min.freq = 1,max.words = 200)
 
 wordcloud(filter(tri_count, Partei == "afd", in_stopwords == 0)$trigram, 
           filter(tri_count, Partei == "afd", in_stopwords == 0)$llr,
-          scale = c(1.5, .01), colors = "blue")
+          scale = c(1.5, .01), colors = "blue", min.freq = 2.5, max.words = 200)
 dev.off()
 par(mar = c(5, 4, 4, 2) + 0.1)
 par(mfrow = c(1,1))
 
 ```
 
-![Wortwolken der Trigramme (ohne Stopwords)](trigram_wcs02b.png)
+![Wortwolken der Trigramme (ohne Stopwords)](trigram_wcs002b.png)
 
 Auch hier müssen wir teilweise ein wenig in die Wortwolken einzoomen, um interessantere Tendenzen zu entdecken. Alternativ können wir auch die Trigrammtabellen selbst anschauen:
 
@@ -843,7 +901,7 @@ Alternativ oder ergänzend zur Verwendung der oben für Einzelwortanalysen etabl
 
 ```{r tfidf, fig.height=12}
 
-tri_count %>% bind_tf_idf(term = trigram, document = Partei, n = Freq) %>% select(Partei, trigram, tf, idf, tf_idf) %>% arrange(desc(tf_idf)) %>% datatable() %>% 
+tri_count %>% bind_tf_idf(term = trigram, document = Partei, n = Freq) %>% select(Partei, trigram, tf, idf, tf_idf) %>% arrange(desc(tf_idf)) %>% head(500) %>% datatable() %>% 
   formatSignif(columns = c("tf", "idf",  "tf_idf"), digits=3)
 
 # tri_count %>% bind_tf_idf(term = trigram, document = Partei, n = Freq) %>% select(Partei, trigram, tf, idf, tf_idf) %>% arrange(desc(tf_idf)) %>% group_by(Partei) %>% 
@@ -860,7 +918,7 @@ Erneut lohnt es sich, zusätzlich nur die Trigramme ohne Stopwords einzubeziehen
 
 ```{r nonstop}
 
-tri_count %>% filter(in_stopwords == 0) %>% bind_tf_idf(term = trigram, document = Partei, n = Freq) %>% select(Partei, trigram, tf, idf, tf_idf) %>% arrange(desc(tf_idf)) %>% datatable() %>% 
+tri_count %>% filter(in_stopwords == 0) %>% bind_tf_idf(term = trigram, document = Partei, n = Freq) %>% select(Partei, trigram, tf, idf, tf_idf) %>% arrange(desc(tf_idf)) %>% head(500) %>% datatable() %>% 
   formatSignif(columns = c("tf", "idf",  "tf_idf"), digits=3)
 
 ```
@@ -869,7 +927,11 @@ Die Ergebnisse sind jenen von oben nicht ganz unähnlich -- bei der AfD finden w
 
 Die Trigramme ohne Stopwords bringen in diesem Fall noch deutlich aussagekräftigere Ergebnisse -- so finden sich bei der AfD weit oben *asylparadies deutschland schließen*, *cancel culture bekämpfen*, *corona maßnahmen beenden*, bei der FDP *altersvorsorge depot einführen*, *effektiver schneller moderner* oder *german dream zuschuss*, bei den Grünen *europäischen green deal*, *sozial ökologische Marktwirtschaft* und *bessere soziale absicherung*, bei der Linken *lassen niemanden zurück*, *deutlich mehr personal*, *gut bezahlte arbeitsplätze* und bei der SPD *grad celsius begrenzen*, *sozial ökologisch wirtschaften*, *zukunftsfähige wirtschaft fördern*.
 
-Was unterschiedliche rhetorische Strategien angeht, wird beispielsweise deutlich, dass die SPD sich vor allem auf 
+Was unterschiedliche rhetorische Strategien angeht, wird beispielsweise deutlich, dass die SPD sich maßgeblich auf Errungenschaften in der bisherigen großen Koalition bezieht (*dafür gesorgt dass*). Die FDP setzt, wie oben schon erwähnt, auf die sehr häufige Erwähnung ihres Parteinamens in Verbindung mit *wir* (*wir freie demokraten*), während auch die CDU das *wir* in den Vordergrund stellt, das in vielen Verbindungen auftaucht.
+
+Insgesamt bietet eine quantitative Analyse also ein gutes Sprungbrett für eine weitergehende qualitative Untersuchung der Wahlprogramme sowohl hinsichtlich ihres Inhalts als auch in bezug auf die darin angewandten rhetorischen Strategien. Dabei ließen sich die hier vorgestellten Methoden natürlich auch kombinieren und noch verfeinern: So könnte man, statt mit Unigrammen (also einzelnen Wörtern wie im ersten Abschnitt dieses Tutorials) oder Trigrammen (wie im zweiten Teil) mit verschiedenen n-Grammen arbeiten, also Unigramme, Bigramme, Trigramme und vielleicht auch 4-Gramme kombinieren, um daraus die auffälligsten Muster abzuleiten. Auch könnte man, statt die n-Gramme der Parteiprogramme untereinander zu vergleichen, sie mit n-Grammen aus einem Referenzkorpus vergleichen -- von den gängigen Referenzkorpora des Deutschen gibt es zwar derzeit (noch) keine n-Gramm-Listen, aber man könnte z.B. N-Gramm-Stichproben aus dem DWDS extrahieren oder mit N-Gramm-Listen wie denen von [Subs2Vec](https://link.springer.com/article/10.3758/s13428-020-01406-3)  (die auf einem Untertitelkorpus basieren) arbeiten. 
+
+Auch für die Visualisierung gibt es natürlich andere Optionen -- so könnten wir einerseits mit dem Paket [wordcloud2](https://cran.r-project.org/web/packages/wordcloud2/vignettes/wordcloud.html) (mehr oder weniger) interaktive HTML-Wordclouds generieren, andererseits könnten wir von Wordclouds aufgrund der Tatsache, dass ihr Informationsgehalt beschränkt ist, Abstand nehmen und andere Visualisierungsoptionen bevorzugen -- eine Alternative findet sich z.B. [hier](https://www.data-to-viz.com/graph/wordcloud.html).
 
 ## Literatur
 
