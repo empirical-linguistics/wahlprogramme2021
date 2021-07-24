@@ -432,6 +432,8 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 
 ```
 
+[Grafik in höherer Auflösung](https://raw.githubusercontent.com/empirical-linguistics/wahlprogramme2021/main/fig_large/wordclouds001.png)
+
 ```{r wordcloud2, eval = FALSE}
 
 # Seed setzen, damit immer die gleiche Wolke entsteht
