@@ -406,7 +406,7 @@ csu200 <- head(csu, 200)
 # (da die Anordnung der Wörter zufallsgeneriert ist)
 set.seed(1985)
 
-png("wordclouds001.png", width = 6, height = 6, un = "in", res = 600)
+png("wordclouds001.png", width = 6, height = 6, un = "in", res = 300)
 
 par(mfrow = c(4,2))
 par(mar = c(.5, .5, .5, .5) + 0.1)
@@ -739,7 +739,7 @@ set.seed(1985)
 
 # mit Stopwords:
 
-png("trigram_wcs002a.png", width = 6, height = 6, un = "in", res = 1200)
+png("trigram_wcs002a.png", width = 6, height = 6, un = "in", res = 300)
 # svglite("trigram_wcs02.svg", width = 6, height = 6)
 par(mfrow = c(4,2))
 par(mar = c(.5, .5, .5, .5) + 0.1)
@@ -769,7 +769,7 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 par(mfrow = c(1,1))
 
 # nur ohne Stopwords:
-png("trigram_wcs002b.png", width = 6, height = 6, un = "in", res = 1200)
+png("trigram_wcs002b.png", width = 6, height = 6, un = "in", res = 300)
 # svglite("trigram_wcs02.svg", width = 6, height = 6)
 par(mfrow = c(4,2))
 par(mar = c(1, 1, 1, 1) + 0.1)
