@@ -917,7 +917,7 @@ Die Analyse zeigt natürlich auch, dass diese Herangehensweise ihre Grenzen hat.
 
 ### TF-IDF
 
-Alternativ oder ergänzend zur Verwendung der oben für Einzelwortanalysen etablierten Assoziationsmaße können wir auch das recht einfache *tf-idf*-Maß benutzen, das praktischerweise ins Tidytext-Paket bereits integriert ist. Dieses Maß kombiniert *term frequency* (tf) mit *inverse document frequency* - Ersteres bezieht sich einfach auf die Frequenz eines Wortes (bzw. in dem Fall: eines Trigramms) in einem Dokument, Letzteres sorgt dafür, dass sehr geläufige und damit frequente Wörter bzw. n-Gramme weniger stark gewichtet werden (vgl. hierzu auch Silge & Robinson 2017).
+Alternativ oder ergänzend zur Verwendung der oben für Einzelwortanalysen etablierten Assoziationsmaße können wir auch das recht einfache *tf-idf*-Maß benutzen, das praktischerweise ins Tidytext-Paket bereits integriert ist. Dieses Maß kombiniert *term frequency* (tf) mit *inverse document frequency* - Ersteres bezieht sich einfach auf die Frequenz eines Wortes (bzw. in dem Fall: eines Trigramms) in einem Dokument, Letzteres sorgt dafür, dass sehr geläufige und damit frequente Wörter bzw. n-Gramme weniger stark gewichtet werden (vgl. hierzu auch [Silge & Robinson 2017](https://www.tidytextmining.com/tfidf.html#tfidf)).
 
 ```{r tfidf,  class.source = "fold-hide"}
 
