@@ -1,5 +1,6 @@
 ---
 title: "Quantitative Analyse von Wahlprogrammen"
+author: "Stefan Hartmann"
 output: 
   html_document:
     theme: flatly
@@ -9,6 +10,7 @@ output:
     collapsed: false
     df_print: paged
     fig_captions: false
+    code_folding: show
 ---
 
 ```{r setup, include=FALSE}
@@ -88,17 +90,12 @@ linke_text <- readRDS("linke.Rds")
 
 Für das Einlesen von HTML-Dateien gibt es alternativ die Möglichkeit, mit [Trafilatura](https://trafilatura.readthedocs.io/en/latest/) (Barbaresi 2021) zu arbeiten. Trafilatura hat den großen Vorteil, dass es die Möglichkeit bietet, all das unerwünschte "Beiwerk", das wir beim Einlesen von HTML-Dateien mit crawlen (also z.B. HTML-Codes) einigermaßen zuverlässig automatisch auszufiltern. Wie das in R geht, ist [in der Dokumentation](https://trafilatura.readthedocs.io/en/latest/usage-r.html?highlight=mit%20r) des Tools genauer nachzulesen; um im Schnelldurchlauf zu sehen, wie wir Trafilatura zum Einlesen des Wahlprogramms der Linken verwenden können, klicken Sie hier:
 
-<p>
+<details>
 
-<a class="btn btn-primary" data-toggle="collapse" href="#collapseExample1" role="button" aria-expanded="false" aria-controls="collapseExample1"> Hier klicken </a>
-
-</p>
-
-<p style="background-color:rgba(203, 214, 11, 0.3);">
+<summary>klick mich</summary>
 
 Wir brauchen zusätzlich das Paket `reticulate`, das eine Schnittstelle für Python bietet. Natürlich funktioniert der Code nur, wenn auch Trafilatura installiert ist (wie das geht, ist der oben verlinkten Dokumentation zu entnehmen) -- daher arbeite ich im restlichen Tutorial einfach mit dem `readLines`-Befehl.
 
-</p>
 
 ```{r trafi, eval = FALSE}
 
@@ -109,6 +106,10 @@ downloaded <- trafilatura$fetch_url("https://www.die-linke.de/wahlen/wahlprogram
 linke_trafi <- trafilatura$extract(downloaded)
 
 ```
+
+
+</details>
+
 
 ```{r linksexport, eval = FALSE, include = FALSE}
 
@@ -146,7 +147,7 @@ Für unsere illustrative Analyse wollen wir uns aber mit den hier vorliegenden u
 
 Für die Analyse bieten sich nun mehrere Optionen an. Bei einer Keyword-Analyse geht es darum, herauszufinden, welche Wörter für einen gegegebenen Datensatz besonders charakteristisch sind. Dafür braucht man natürlich einen Vergleichsdatensatz. Wir werden im Folgenden die Wortfrequenzliste des [Digitalen Wörterbuchs der Deutschen Sprache](https://www.dwds.de) verwenden. Diese lässt sich über [das Tool "Dstar"](https://kaskade.dwds.de/dstar/kern/) mit der Suchanfrage `count(* #sep)` erstellen. Wir lesen sie hier ein:
 
-```{r vgl}
+```{r vgl, message = FALSE}
 
 dwds <- read_delim("dwds_kern_frequency_list.txt", delim = "\t", quote = "", col_names = c("Freq", "Token"))
 
@@ -158,7 +159,7 @@ Außer mit einzelnen Wörtern können wir auch mit *N-Grammen* arbeiten. N-Gramm
 
 Um zunächst die Einzelwortfrequenzen der Parteiprogramme mit der DWDS-Frequenzliste vergleichen zu können, müssen wir zunächst eine Tabelle mit den Wortfrequenzen in den einzelnen Dokumenten erstellen - man spricht hier manchmal auch von einer *term-document matrix*. Bevor wir das tun, bereinigen wir die Daten zunächst noch, indem wir die Interpunktion, Zeilenumbrüche etc. entfernen. Außerdem heben wir Groß- und Kleinschreibung auf, um die Daten besser analysieren zu können, und schließen Wörter wie *kapitel, seite* und reine Zahlenfolgen aus. Daraufhin nutzen wir die `strsplit`-Funktion, mit denen man, wie ihr Name verrät, Strings splitten kann, um an die einzelnen Wörter (definiert als das, was zwischen zwei Leerzeichen steht) zu gelangen. Dafür splitten wir den Text an den Leerzeichen auf. Wir erhalten dann einen sehr großen Vektor mit Einzelwörtern, die wir daraufhin mit der `table`-Funktion auszählen und in einen Dataframe überführen. Das Ganze gießen wir in eine Funktion, die wir auf die einzelnen Parteiprogramme anwenden können.
 
-```{r bereinigung}
+```{r bereinigung, class.source = "fold-hide"}
 
 count_tokens <- function(d) {
   # Interpunktion und Zeilenumbrüche weg:
@@ -301,7 +302,7 @@ dwds_size <- sum(dwds$Freq)
 
 Nun können wir die LLR- bzw. Dice-Werte bekommen, indem wir die entsprechenden Werte einfach in die oben definierten Funktionen einsetzen. Wir nutzen hier die `left_join`-Funktion aus der Tidyverse-Paketfamilie, um zunächst an das jeweilige Parteiprogramm eine Spalte anzuhängen, die die DWDS-Gesamtfrequenzen aus dem `dwds`-Dataframe enthält, und dann die `mutate`-Funktion, um die LLR- und Dice-Werte einfach als weitere Spalten an die Wahlprogramme anzuhängen. Als Beispiel wählen wir einfach die alphabetisch erste der demokratisch ausgerichteten Parteien:
 
-```{r bspfdp}
+```{r bspfdp, message = FALSE}
 
 # Spaltennamen ändern, um Gesamtfrequenz von FDP-Frequenz unterscheiden zu können:
 colnames(cdu) <- c("Token", "Freq_cdu")
@@ -333,7 +334,7 @@ Dieses erste Ergebnis ist schon deutlich aufschlussreicher als die reine Tokenfr
 
 Da wir das nun auch für die anderen Parteien machen wollen, lohnt es sich, das Ganze wieder in eine Funktion zu gießen und dann auf alle Parteien anzuwenden:
 
-```{r getllranddice, message=FALSE}
+```{r getllranddice, message=FALSE, class.source = "fold-hide"}
 
 # Funktion:
 
@@ -385,7 +386,7 @@ Wir wollen nun die Daten mit Hilfe von Wortwolken visualisieren, wobei die Grö�
 
 Zur Erstellung der Wortwolken benutzen wir die `wordcloud`-Funktion aus dem gleichnamigen Paket. Mit dem `scale`-Argument lässt sich die minimale und maximale Schriftgröße einstellen. Dieses Argument habe ich für die einzelnen Parteien so angepasst, dass die Wolken ungefähr die gleichen Dimensionen haben (weil sich die LLR-Werte doch teilweise sehr unterscheiden). Bei der Linken schließe ich ein paar Wörter aus, die nicht zum Text selbst, sondern zum HTML-Code gehören (z.B. *div*, *nav* etc.). Dieses Problem stellt sich nicht, wenn man mit Trafilatura gearbeitet hat (s. ausklappbarer Teil oben).
 
-```{r subsets,  message=FALSE, warning=FALSE}
+```{r subsets,  message=FALSE, warning=FALSE, class.source = "fold-hide"}
 
 # Top 200
 linke200 <- head(filter(linke, !Token %in% c("li", "strong", "div", "p", "class", "ul", "nav", "h2", "nbsp", "accordion", "href", "a", "id", "h3", "aria", "panel", "role", "h4", "56202", "list")), 200)
@@ -397,7 +398,7 @@ cdu200 <- head(cdu, 200)
 csu200 <- head(csu, 200)
 ```
 
-```{r wordcloud, eval = FALSE, include = FALSE}
+```{r wordcloud, eval = FALSE, include = FALSE, class.source = "fold-hide"}
 
 # Wortwolken erstellen
 
@@ -465,7 +466,7 @@ Die einzelnen Keywords sind zwar schon recht aufschlussreich, aber gerade wenn w
 
 Dafür bereinigen wir die Daten erst wieder ein wenig: Wir entfernen (für die PDF-Dateien) die Worttrennung am Zeilenende und splitten den Text in Sätze auf. Dann überführen wir die einzelnen Sätze in einen Dataframe ("tibble" im Tidyverse-Jargon), was das Input-Format ist, das die `unnest_tokens`-Funktion benötigt. Für das Linken-Programm verwende ich hier die mit Trafilatura gecrawlte Version -- im Falle der mit `readLines` eingelesenen Version wäre es sinnvoll, zunächst noch die vielen HTML-Tags aus dem Text zu entfernen.
 
-```{r ngramparty}
+```{r ngramparty, class.source = "fold-hide"}
 
 # Funktion, um leere Elemente zu entfernen
 no_empty <- function(vec) {
@@ -557,11 +558,11 @@ Mit Hilfe dieser Tabelle können wir nun die Frequenzwerte errechnen, die wir wi
 
 ```{r llrngrams}
 
-# new LLR column for tri_count df:
+# neue LLR-Spalte für tri_count-Dataframe:
 tri_count$llr <- numeric(nrow(tri_count))
 tri_count$p_value <- numeric(nrow(tri_count))
 
-# get LLR for each party:
+# LLR für jede Partei errechnen:
 for(i in 1:length(unique(tri_count$Partei))) {
   prt <- unique(tri_count$Partei)[i]
   
@@ -640,7 +641,7 @@ tri_count$in_stopwords <- unname(in_stopwords(tri_count$trigram))
 Auf Grundlage der so gewonnenen Assoziationsmaße können wir erneut Wortwolken erstellen, denen wir die am häufigsten vorkommenden Dreiwortfolgen der Parteiprogramme entnehmen können. Zunächst mit allen Trigrammen...
 
 
-```{r moredatawrangling}
+```{r moredatawrangling, class.source = "fold-hide"}
 
 # Wir schließen die Trigramme aus,
 # die aus Boilerplate-ähnlichem Material bestehen
@@ -688,7 +689,7 @@ par(mfrow = c(1,1))
 
 ... und anschließend nur mit jenen, die keine Stopwords enthalten. Die Befehle unterscheiden sich ein wenig, weil ich das `min.freq`-Argument manuell angepasst habe, um Trigramme mit sehr niedriger LLR herauszufiltern, da man sonst den Wald vor lauter n-Grammen nicht mehr sieht.
 
-```{r wctripub2, eval = FALSE}
+```{r wctripub2, eval = FALSE, class.source = "fold-hide"}
 
 set.seed(1985)
 
@@ -810,7 +811,7 @@ Auch hier müssen wir teilweise ein wenig in die Wortwolken einzoomen, um intere
 
 ### AfD
 
-```{r trigramtables1}
+```{r trigramtables01, class.source = "fold-hide"}
 
 tri_count %>% 
   arrange(desc(llr)) %>% # absteigend nach LLR sortieren
@@ -823,7 +824,7 @@ tri_count %>%
 
 ### CDU
 
-```{r trigramtables1b}
+```{r trigramtables1b, class.source = "fold-hide"}
 
 tri_count %>% 
   arrange(desc(llr)) %>% # absteigend nach LLR sortieren
@@ -834,9 +835,22 @@ tri_count %>%
 
 ```
 
+### CSU
+
+```{r trigramtables1c, class.source = "fold-hide"}
+
+tri_count %>% 
+  arrange(desc(llr)) %>% # absteigend nach LLR sortieren
+  filter(Partei == "csu") %>% # Partei filtern
+  head(500) %>% # auf erste 500 Belege beschränken
+  datatable() %>% # interaktive Tabelle
+  formatSignif(columns = c("llr", "p_value",  "odds_ratio"), digits=3) # auf wenige Nachkommastellen reduzieren
+
+```
+
 ### FDP
 
-```{r trigramtables2, echo=FALSE}
+```{r trigramtables2, class.source = "fold-hide"}
 
 tri_count %>% 
   arrange(desc(llr)) %>% # absteigend nach LLR sortieren
@@ -849,7 +863,7 @@ tri_count %>%
 
 ### Grüne
 
-```{r trigramtables3, echo=FALSE}
+```{r trigramtables3, class.source = "fold-hide"}
 
 tri_count %>% 
   arrange(desc(llr)) %>% # absteigend nach LLR sortieren
@@ -862,7 +876,7 @@ tri_count %>%
 
 ### Linke
 
-```{r trigramtables4, echo=FALSE}
+```{r trigramtables4, class.source = "fold-hide"}
 
 tri_count %>% 
   arrange(desc(llr)) %>% # absteigend nach LLR sortieren
@@ -873,9 +887,11 @@ tri_count %>%
 
 ```
 
+
+
 ### SPD
 
-```{r trigramtables5, echo=FALSE}
+```{r trigramtables5, class.source = "fold-hide"}
 
 tri_count %>% 
   arrange(desc(llr)) %>% # absteigend nach LLR sortieren
@@ -886,6 +902,7 @@ tri_count %>%
 
 
 ```
+
 
 Bei den am stärksten assoziierten Trigrammen finden sich relativ viele Ähnlichkeiten, nur eben jeweils mit anderem Parteinamen. Fast alle Parteien *fordern* viel, die Freien Demokraten *wollen* übrigens auch viel, allerdings so viel, dass das Trigramm *freie demokraten wollen* nicht mehr in die Wolke gepasst hat, ohne den Rest der Wordcloud unleserlich zu machen, ebenso wie *wir freie demokraten*, was ebenfalls in dieser Wolke unterschlagen wird, um den Rest lesbar zu halten (nebenbei: bin ich der Einzige, der bei *wir freie* (!) *demokraten* [stolpert](https://grammis.ids-mannheim.de/fragen/3167)?).
 
@@ -899,7 +916,7 @@ Die Analyse zeigt natürlich auch, dass diese Herangehensweise ihre Grenzen hat.
 
 Alternativ oder ergänzend zur Verwendung der oben für Einzelwortanalysen etablierten Assoziationsmaße können wir auch das recht einfache *tf-idf*-Maß benutzen, das praktischerweise ins Tidytext-Paket bereits integriert ist. Dieses Maß kombiniert *term frequency* (tf) mit *inverse document frequency* - Ersteres bezieht sich einfach auf die Frequenz eines Wortes (bzw. in dem Fall: eines Trigramms) in einem Dokument, Letzteres sorgt dafür, dass sehr geläufige und damit frequente Wörter bzw. n-Gramme weniger stark gewichtet werden (vgl. hierzu auch Silge & Robinson 2017).
 
-```{r tfidf, fig.height=12}
+```{r tfidf,  class.source = "fold-hide"}
 
 tri_count %>% bind_tf_idf(term = trigram, document = Partei, n = Freq) %>% select(Partei, trigram, tf, idf, tf_idf) %>% arrange(desc(tf_idf)) %>% head(500) %>% datatable() %>% 
   formatSignif(columns = c("tf", "idf",  "tf_idf"), digits=3)
@@ -916,7 +933,7 @@ tri_count %>% bind_tf_idf(term = trigram, document = Partei, n = Freq) %>% selec
 
 Erneut lohnt es sich, zusätzlich nur die Trigramme ohne Stopwords einzubeziehen.
 
-```{r nonstop}
+```{r nonstop, class.source = "fold-hide"}
 
 tri_count %>% filter(in_stopwords == 0) %>% bind_tf_idf(term = trigram, document = Partei, n = Freq) %>% select(Partei, trigram, tf, idf, tf_idf) %>% arrange(desc(tf_idf)) %>% head(500) %>% datatable() %>% 
   formatSignif(columns = c("tf", "idf",  "tf_idf"), digits=3)
@@ -942,4 +959,10 @@ Auch für die Visualisierung gibt es natürlich andere Optionen -- so könnten w
 - Silge, Julia & David Robinson. 2017. Text mining with R. A Tidy approach. Sebastopol: O’Reilly. http://tidytextmining.com/index.html.
 
 
-Zuletzt aktualisiert: `r format(Sys.time(), '%d %B, %Y')`
+Zuletzt aktualisiert: `r format(Sys.time(), '%d %B, %Y')` -- [CC-BY](https://creativecommons.org/licenses/by-sa/4.0/)
+
+```{r, fig.align='center', echo=FALSE}
+
+knitr::include_graphics("ccby.svg")
+
+```
