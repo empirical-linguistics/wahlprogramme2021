@@ -455,6 +455,8 @@ wordcloud(words = spd200$Token, freq = spd200$LLR/20, col = "red", scale = c(3, 
 
 ![Wortwolken der einzelnen Parteiprogramme](wordclouds001.png)
 
+[Grafik in höherer Auflösung](https://raw.githubusercontent.com/empirical-linguistics/wahlprogramme2021/main/fig_large/wordclouds001.png)
+
 Es zeigen sich ein paar interessante Tendenzen: CDU, SPD, FDP und Grüne benutzen besonders häufig *wir*. Die Modalverben *wollen* und *müssen* kommen in praktisch allen Programmen vor, was naheliegend ist. Einige Kernthemen der Parteien lassen sich aus den Keywords ebenfalls gut herauslesen: Bei der FDP zum Beispiel *Wettbewerb, Unternehmen, Digitalisierung*, bei der Linken etwa *Arbeitsbedingungen*, bei der AfD z.B. *Deutschland* und *Migration*. Dass einige Parteien gendern, schlägt sich im Keyword *innen* nieder (das bei der Tokenisierung als eigenes Wort behandelt wird). *menschen* werden bei CDU und Grünen besonders oft erwähnt, das AfD-Programm spricht über *kinder* und *familien*, das CDU-Programm über *sicherheit* und *zusammenarbeit*.
 
 Insgesamt geben die Keywords einen interessanten Einblick in die wesentlichen Themen der Parteiprogramme, auch wenn man natürlich ein gewisses Hintergrundwissen braucht, um sie adäquat interpretieren zu können -- so findet sich beispielsweise das Keyword *euro* bei der Linken und bei der AfD, aber die Position beider Parteien zur gemeinsamen europäischen Währung weist bekanntlich gewisse Unterschiede auf. Daher lohnt es sich, über Einzelwörter hinauszugehen, was wir im Folgenden tun wollen.
